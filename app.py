@@ -191,65 +191,44 @@ def virtual_tryon():
         logger.error(f"Try-on failed: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
 
-@app.route("/generate", methods=["POST"])
-def generate():
-    logger.info("\n" + "=" * 50)
-    logger.info("Received new image generation request")
-
+# Add this helper function in your backend file
+def generate_image(prompt):
     try:
-        if not request.is_json:
-            logger.error("Request must be JSON")
-            return jsonify({"error": "Request must be JSON"}), 400
-
-        data = request.get_json()
-        prompt = data.get("prompt", "A futuristic city")
-
-        logger.info(f"Generating image for prompt: {prompt[:100]}...")
-
-        # Create a detailed prompt for better image generation
-        enhanced_prompt = f"""
-        Create a high-quality, detailed image based on this description: {prompt}
-        
-        Requirements:
-        - High resolution and realistic details
-        - Professional quality suitable for commercial use
-        - Rich colors and proper lighting
-        - Clear and focused subject matter
-        - Artistic but realistic representation
-        """
-
-        # Call Gemini for text-to-image generation
-        logger.info("Calling Gemini for image generation...")
         response = client.models.generate_content(
             model=MODEL_ID,
-            contents=[enhanced_prompt],
+            contents=[prompt],
             config=types.GenerateContentConfig(
                 response_modalities=["Text", "Image"]
             )
         )
 
-        # Save generated image
         filenames = []
         for part in response.candidates[0].content.parts:
             if part.inline_data is not None:
                 filename = f"generated_{uuid.uuid4()}.png"
                 filepath = os.path.join(IMAGE_DIR, filename)
                 pathlib.Path(filepath).write_bytes(part.inline_data.data)
-                logger.info(f"Generated image saved: {filepath}")
                 filenames.append(filename)
 
-        if filenames:
-            return jsonify({
-                "message": "Images generated successfully!", 
-                "filenames": filenames,
-                "imageUrl": f"/results/{filenames[0]}"
-            })
-        else:
-            return jsonify({"error": "Failed to generate images"}), 500
-
+        return filenames
     except Exception as e:
         logger.error(f"Image generation failed: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+        return []
+@app.route("/generate", methods=["POST"])
+def generate():
+    data = request.json
+    prompt = data.get("prompt", "A futuristic city")
+
+    filenames = generate_image(prompt)
+    if filenames:
+        return jsonify({
+            "message": "Images generated successfully!",
+            "filenames": filenames,
+            "imageUrl": f"/results/{filenames[0]}"
+        })
+    else:
+        return jsonify({"error": "Failed to generate images"}), 500
+
 
 @app.route("/results/<filename>")
 def get_result(filename):
@@ -316,6 +295,7 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"Failed to start server: {str(e)}")
         raise
+
 
 
 
