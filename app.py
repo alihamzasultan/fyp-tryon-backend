@@ -172,10 +172,9 @@ def virtual_tryon():
         filenames = []
         for part in response.candidates[0].content.parts:
             if part.inline_data is not None:
-                filename = f"result_{uuid.uuid4()}.png"
+                filename = f"generated_{uuid.uuid4()}.png"
                 filepath = os.path.join(IMAGE_DIR, filename)
                 pathlib.Path(filepath).write_bytes(part.inline_data.data)
-                logger.info(f"Generated AI image saved: {filepath}")
                 filenames.append(filename)
 
         if not filenames:
@@ -295,6 +294,7 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"Failed to start server: {str(e)}")
         raise
+
 
 
 
