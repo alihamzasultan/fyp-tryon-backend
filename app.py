@@ -216,17 +216,48 @@ def generate_image(prompt):
 @app.route("/generate", methods=["POST"])
 def generate():
     data = request.json
-    prompt = data.get("prompt", "A futuristic city")
+    user_prompt = data.get("prompt", "A futuristic city")  # Note: Typo in "prompt" fixed below
+    
+    # Hardcoded base prompt
+    base_prompt = """Generate a high-quality, photorealistic image of a Requested garment in a white clear background
+- clear and front view of the garment
+- Excellent fabric texture and details
+- Professional product photography quality
+- Clean background
+- Well-lit with studio lighting
+Specific requirements: """
+    
+    # Combine with user prompt
+    full_prompt = base_prompt + user_prompt
+    
+    try:
+        logger.info(f"Generating image with prompt: {full_prompt}")
+        response = client.models.generate_content(
+            model=MODEL_ID,
+            contents=[full_prompt],
+            config=types.GenerateContentConfig(
+                response_modalities=["Text", "Image"]
+            )
+        )
 
-    filenames = generate_image(prompt)
-    if filenames:
-        return jsonify({
-            "message": "Images generated successfully!",
-            "filenames": filenames,
-            "imageUrl": f"/results/{filenames[0]}"
-        })
-    else:
-        return jsonify({"error": "Failed to generate images"}), 500
+        # Process only the first image part found
+        for part in response.candidates[0].content.parts:
+            if part.inline_data is not None:
+                filename = f"generated_{uuid.uuid4()}.png"
+                filepath = os.path.join(IMAGE_DIR, filename)
+                pathlib.Path(filepath).write_bytes(part.inline_data.data)
+                logger.info(f"Generated image saved as {filename}")
+                return jsonify({
+                    "success": True,
+                    "message": "Image generated successfully!",
+                    "imageUrl": f"/results/{filename}"
+                })
+
+        return jsonify({"success": False, "error": "No image generated"}), 500
+
+    except Exception as e:
+        logger.error(f"Image generation failed: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @app.route("/results/<filename>")
@@ -294,6 +325,7 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"Failed to start server: {str(e)}")
         raise
+
 
 
 
