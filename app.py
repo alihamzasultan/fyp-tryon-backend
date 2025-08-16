@@ -17,7 +17,14 @@ CORS(app)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-client = genai.Client(api_key="AIzaSyCPw79xvCt4ZNOXJh4ORZ0OBZ4S7bZka7U")
+# Get API key from environment variable (Railway will set this)
+import os
+api_key = os.getenv("GOOGLE_API_KEY", "AIzaSyCPw79xvCt4ZNOXJh4ORZ0OBZ4S7bZka7U")
+if not api_key:
+    logger.error("GOOGLE_API_KEY environment variable not set!")
+    raise ValueError("GOOGLE_API_KEY environment variable is required")
+
+client = genai.Client(api_key=api_key)
 MODEL_ID = "gemini-2.0-flash-exp"
 # Image storage
 IMAGE_DIR = "tryon_results"
@@ -184,28 +191,24 @@ def virtual_tryon():
         logger.error(f"Try-on failed: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
 
-@app.route("/text-to-image", methods=["POST"])
-def text_to_image():
+@app.route("/generate", methods=["POST"])
+def generate():
     logger.info("\n" + "=" * 50)
-    logger.info("Received new text-to-image request")
+    logger.info("Received new image generation request")
 
     try:
         if not request.is_json:
             logger.error("Request must be JSON")
-            return jsonify({"success": False, "error": "Request must be JSON"}), 400
+            return jsonify({"error": "Request must be JSON"}), 400
 
         data = request.get_json()
-        prompt_text = data.get("prompt")
+        prompt = data.get("prompt", "A futuristic city")
 
-        if not prompt_text:
-            logger.error("Missing prompt text")
-            return jsonify({"success": False, "error": "Prompt text is required"}), 400
-
-        logger.info(f"Generating image for prompt: {prompt_text[:100]}...")
+        logger.info(f"Generating image for prompt: {prompt[:100]}...")
 
         # Create a detailed prompt for better image generation
         enhanced_prompt = f"""
-        Create a high-quality, detailed image based on this description: {prompt_text}
+        Create a high-quality, detailed image based on this description: {prompt}
         
         Requirements:
         - High resolution and realistic details
@@ -216,7 +219,7 @@ def text_to_image():
         """
 
         # Call Gemini for text-to-image generation
-        logger.info("Calling Gemini for text-to-image generation...")
+        logger.info("Calling Gemini for image generation...")
         response = client.models.generate_content(
             model=MODEL_ID,
             contents=[enhanced_prompt],
@@ -229,25 +232,24 @@ def text_to_image():
         filenames = []
         for part in response.candidates[0].content.parts:
             if part.inline_data is not None:
-                filename = f"text2img_{uuid.uuid4()}.png"
+                filename = f"generated_{uuid.uuid4()}.png"
                 filepath = os.path.join(IMAGE_DIR, filename)
                 pathlib.Path(filepath).write_bytes(part.inline_data.data)
-                logger.info(f"Generated text-to-image saved: {filepath}")
+                logger.info(f"Generated image saved: {filepath}")
                 filenames.append(filename)
 
-        if not filenames:
-            return jsonify({"success": False, "error": "No image generated"}), 500
-
-        return jsonify({
-            "success": True,
-            "imageUrl": f"/results/{filenames[0]}",
-            "message": "Text-to-image generation complete",
-            "prompt": prompt_text
-        })
+        if filenames:
+            return jsonify({
+                "message": "Images generated successfully!", 
+                "filenames": filenames,
+                "imageUrl": f"/results/{filenames[0]}"
+            })
+        else:
+            return jsonify({"error": "Failed to generate images"}), 500
 
     except Exception as e:
-        logger.error(f"Text-to-image generation failed: {str(e)}")
-        return jsonify({"success": False, "error": str(e)}), 500
+        logger.error(f"Image generation failed: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/results/<filename>")
 def get_result(filename):
@@ -267,19 +269,53 @@ def get_result(filename):
 @app.route("/health", methods=["GET"])
 def health_check():
     """Health check endpoint to verify service is running"""
-    return jsonify({
-        "status": "healthy",
-        "service": "Gemini AI Image Generation Service",
-        "endpoints": [
-            "/try-on - Virtual clothing try-on",
-            "/text-to-image - Text to image generation",
-            "/results/<filename> - Get generated images"
-        ]
-    })
+    try:
+        # Check if Gemini client is working
+        api_key_status = "configured" if api_key else "missing"
+        
+        return jsonify({
+            "status": "healthy",
+            "service": "Gemini AI Image Generation Service",
+            "api_key": api_key_status,
+            "model": MODEL_ID,
+            "endpoints": [
+                "/try-on - Virtual clothing try-on",
+                "/generate - Text to image generation",
+                "/results/<filename> - Get generated images"
+            ]
+        })
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        return jsonify({
+            "status": "unhealthy",
+            "error": str(e),
+            "service": "Gemini AI Image Generation Service"
+        }), 500
+
+@app.route("/test", methods=["GET"])
+def test_endpoint():
+    """Simple test endpoint to verify basic functionality"""
+    try:
+        return jsonify({
+            "message": "Backend is working!",
+            "timestamp": str(datetime.datetime.now()),
+            "python_version": "3.x"
+        })
+    except Exception as e:
+        logger.error(f"Test endpoint failed: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     logger.info("Starting Gemini AI Image Generation server...")
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    # Railway sets PORT environment variable
+    port = int(os.getenv("PORT", 5000))
+    logger.info(f"Server will run on port {port}")
+    
+    try:
+        app.run(host="0.0.0.0", port=port, debug=False)  # Set debug=False for production
+    except Exception as e:
+        logger.error(f"Failed to start server: {str(e)}")
+        raise
 
 
 
