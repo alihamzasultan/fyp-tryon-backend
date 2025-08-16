@@ -4,7 +4,7 @@ import pathlib
 import io
 import base64
 import logging
-from flask import Flask, request, jsonify, send_file, render_template
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from PIL import Image
 from google import genai
@@ -69,9 +69,9 @@ def save_image(image, prefix="result"):
         raise
 
 
-@app.route("/", methods=["GET"])
-def index():
-    return render_template("index.html")
+
+# Gemini setup
+
 
 # Helper function to decode base64 image and save it temporarily
 def decode_and_save_base64_image(base64_data, filename):
@@ -184,6 +184,71 @@ def virtual_tryon():
         logger.error(f"Try-on failed: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
 
+@app.route("/text-to-image", methods=["POST"])
+def text_to_image():
+    logger.info("\n" + "=" * 50)
+    logger.info("Received new text-to-image request")
+
+    try:
+        if not request.is_json:
+            logger.error("Request must be JSON")
+            return jsonify({"success": False, "error": "Request must be JSON"}), 400
+
+        data = request.get_json()
+        prompt_text = data.get("prompt")
+
+        if not prompt_text:
+            logger.error("Missing prompt text")
+            return jsonify({"success": False, "error": "Prompt text is required"}), 400
+
+        logger.info(f"Generating image for prompt: {prompt_text[:100]}...")
+
+        # Create a detailed prompt for better image generation
+        enhanced_prompt = f"""
+        Create a high-quality, detailed image based on this description: {prompt_text}
+        
+        Requirements:
+        - High resolution and realistic details
+        - Professional quality suitable for commercial use
+        - Rich colors and proper lighting
+        - Clear and focused subject matter
+        - Artistic but realistic representation
+        """
+
+        # Call Gemini for text-to-image generation
+        logger.info("Calling Gemini for text-to-image generation...")
+        response = client.models.generate_content(
+            model=MODEL_ID,
+            contents=[enhanced_prompt],
+            config=types.GenerateContentConfig(
+                response_modalities=["Text", "Image"]
+            )
+        )
+
+        # Save generated image
+        filenames = []
+        for part in response.candidates[0].content.parts:
+            if part.inline_data is not None:
+                filename = f"text2img_{uuid.uuid4()}.png"
+                filepath = os.path.join(IMAGE_DIR, filename)
+                pathlib.Path(filepath).write_bytes(part.inline_data.data)
+                logger.info(f"Generated text-to-image saved: {filepath}")
+                filenames.append(filename)
+
+        if not filenames:
+            return jsonify({"success": False, "error": "No image generated"}), 500
+
+        return jsonify({
+            "success": True,
+            "imageUrl": f"/results/{filenames[0]}",
+            "message": "Text-to-image generation complete",
+            "prompt": prompt_text
+        })
+
+    except Exception as e:
+        logger.error(f"Text-to-image generation failed: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
 @app.route("/results/<filename>")
 def get_result(filename):
     try:
@@ -199,12 +264,22 @@ def get_result(filename):
         logger.error(f"Error serving image: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
+@app.route("/health", methods=["GET"])
+def health_check():
+    """Health check endpoint to verify service is running"""
+    return jsonify({
+        "status": "healthy",
+        "service": "Gemini AI Image Generation Service",
+        "endpoints": [
+            "/try-on - Virtual clothing try-on",
+            "/text-to-image - Text to image generation",
+            "/results/<filename> - Get generated images"
+        ]
+    })
+
 if __name__ == "__main__":
-    logger.info("Starting virtual try-on server...")
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
-
-
-
+    logger.info("Starting Gemini AI Image Generation server...")
+    app.run(host="0.0.0.0", port=5000, debug=True)
 
 
 
