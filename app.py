@@ -125,6 +125,7 @@ def virtual_tryon():
         # Open images using PIL
         shirt_img = Image.open(shirt_img_path)
         user_img = Image.open(user_img_path)
+        time.sleep(60)
 
         # Prompt
         prompt = """
@@ -325,6 +326,7 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"Failed to start server: {str(e)}")
         raise
+
 
 
 
