@@ -136,12 +136,12 @@ def virtual_tryon():
             "Overlay and integrate the provided garment image onto the person.",
             "Do not change the person’s pose, body proportions, face, or hair.",
             "Do not change the background or lighting.",
-            "Do not generate a new background (no white or artificial background).",
-            "Maintain original resolution, camera angle, and style."
+            "Do not generate a new background for the person (no white or artificial background).",
+            "Maintain original resolution, camera angle, and style of the person."
           ],
           "validation":{"if the image of the person is not in front pose or it is unclear or blur, than do not generate the output"}
           "output": {
-            "image": "Realistic final image of the same person wearing the garment, with background unchanged."
+            "image": "Realistic final image of the same person wearing the garment, with background unchanged of the person."
           }
         }
         """
@@ -314,6 +314,7 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"Failed to start server: {str(e)}")
         raise
+
 
 
 
