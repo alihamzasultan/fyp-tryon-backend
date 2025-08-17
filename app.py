@@ -129,35 +129,22 @@ def virtual_tryon():
 
         # Prompt
         prompt = """
-     {
-  "task": "clothing try-on",
-  "input": {
-    "person_image": "Image of the target person",
-    "shirt_image": "Image of the garment to be applied"
-  },
-  "requirements": {
-    "preserve_subject": {
-      "pose": "Do not change the current pose",
-      "body_proportions": "Keep the body exact same without any type of alteration",
-      "facial_features": "no change in the face is required, it should be exact same",
-      "skin_tone": "No changes"
-    },
-    "apply_garment": {
-      "fit": "Natural and realistic",
-      "integration": "Match lighting, shading, and perspective of the person , the person should be wearing the new garment that is provided",
-      "details": "ad texture from the garment image"
-    },
-    "prohibitions": [
-      "Do not modify the person's face or hair",
-      "Do not alter background",
-      "Do not change the camera angle"
-    ]
-  },
-  "output": {
-    "image": "Realistic image of the same person wearing the provided garment"
-  }
-}
-"""
+        {
+          "task": "virtual try-on",
+          "instructions": [
+            "Use the provided person image as the base. Do not redraw or regenerate the person.",
+            "Overlay and integrate the provided garment image onto the person.",
+            "Do not change the person’s pose, body proportions, face, or hair.",
+            "Do not change the background or lighting.",
+            "Do not generate a new background (no white or artificial background).",
+            "Maintain original resolution, camera angle, and style."
+          ],
+          "output": {
+            "image": "Realistic final image of the same person wearing the garment, with background unchanged."
+          }
+        }
+        """
+
 
         # Gemini multi-modal generation
         logger.info("Calling Gemini with multi-image input...")
@@ -326,6 +313,7 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"Failed to start server: {str(e)}")
         raise
+
 
 
 
