@@ -224,11 +224,12 @@ def generate():
     
     # Hardcoded base prompt
     base_prompt = """Generate a high-quality, photorealistic image of a Requested garment in a white clear background
-- clear and front view of the garment
+- clear and front view of the garment, arms open
 - Excellent fabric texture and details
 - Professional product photography quality
 - Clean background
 - Well-lit with studio lighting
+- the garment should not be folded
 Specific requirements: """
     
     # Combine with user prompt
@@ -329,6 +330,7 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"Failed to start server: {str(e)}")
         raise
+
 
 
 
