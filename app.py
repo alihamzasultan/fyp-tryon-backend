@@ -130,31 +130,31 @@ def virtual_tryon():
         # Prompt
         prompt = """
      {
-  "task": "virtual clothing try-on",
+  "task": "clothing try-on",
   "input": {
     "person_image": "Image of the target person",
-    "shirt_image": "Image of the shirt to be applied"
+    "shirt_image": "Image of the garment to be applied"
   },
   "requirements": {
     "preserve_subject": {
-      "pose": "Keep identical to the person in the input image",
-      "body_proportions": "Do not alter height, width, or shape of the body",
-      "facial_features": "Preserve all original facial details exactly",
-      "skin_tone": "No changes to color or texture"
+      "pose": "Do not change the current pose",
+      "body_proportions": "Keep the body exact same without any type of alteration",
+      "facial_features": "no change in the face is required, it should be exact same",
+      "skin_tone": "No changes"
     },
-    "apply_shirt": {
-      "fit": "Natural and realistic, aligned with body contours",
-      "integration": "Match lighting, shading, and perspective of the person image",
-      "details": "Include folds, wrinkles, and texture from the shirt image"
+    "apply_garment": {
+      "fit": "Natural and realistic",
+      "integration": "Match lighting, shading, and perspective of the person , the person should be wearing the new garment that is provided",
+      "details": "ad texture from the garment image"
     },
     "prohibitions": [
       "Do not modify the person's face or hair",
       "Do not alter background",
-      "Do not change the shirt's original color or design"
+      "Do not change the camera angle"
     ]
   },
   "output": {
-    "image": "Realistic image of the same person wearing the provided shirt"
+    "image": "Realistic image of the same person wearing the provided garment"
   }
 }
 """
@@ -326,6 +326,7 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"Failed to start server: {str(e)}")
         raise
+
 
 
 
