@@ -156,19 +156,21 @@ def virtual_tryon():
                     role="user",
                     parts=[
                         types.Part.from_text("""
-                        Virtual try-on task:
-                        - Use the person image as the base.
-                        - Overlay the provided garment naturally.
-                        - Do NOT change pose, background, face, or lighting.
-                        - Maintain original resolution and style.
-                        """),
-                        types.Part.from_image(user_img),   # Person reference image
-                        types.Part.from_image(shirt_img)   # Garment image
+        Virtual try-on task:
+        - Use the person image as the base. Do not redraw or regenerate the person.
+        - Overlay and integrate the provided garment image onto the person.
+        - Do not change the person’s pose, body proportions, face, or hair.
+        - Do not change the background or lighting.
+        - Do not generate a new background (no white or artificial background).
+        - Maintain original resolution, camera angle, and style.
+        """),
+                        types.Part.from_image(user_img),   # Person reference
+                        types.Part.from_image(shirt_img)   # Garment reference
                     ]
                 )
             ],
             config=types.GenerateContentConfig(
-                response_modalities=["Image"]  # Only return image
+                response_modalities=["Image"]  # only return image
             )
         )
 
@@ -330,6 +332,7 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"Failed to start server: {str(e)}")
         raise
+
 
 
 
