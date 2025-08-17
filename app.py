@@ -151,9 +151,24 @@ def virtual_tryon():
         logger.info("Calling Gemini with multi-image input...")
         response = client.models.generate_content(
             model=MODEL_ID,
-            contents=[prompt, user_img, shirt_img],
+            contents=[
+                types.Content(
+                    role="user",
+                    parts=[
+                        types.Part.from_text("""
+                        Virtual try-on task:
+                        - Use the person image as the base.
+                        - Overlay the provided garment naturally.
+                        - Do NOT change pose, background, face, or lighting.
+                        - Maintain original resolution and style.
+                        """),
+                        types.Part.from_image(user_img),   # Person reference image
+                        types.Part.from_image(shirt_img)   # Garment image
+                    ]
+                )
+            ],
             config=types.GenerateContentConfig(
-                response_modalities=["Text", "Image"]
+                response_modalities=["Image"]  # Only return image
             )
         )
 
@@ -314,6 +329,7 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"Failed to start server: {str(e)}")
         raise
+
 
 
 
