@@ -139,6 +139,7 @@ def virtual_tryon():
             "Do not generate a new background (no white or artificial background).",
             "Maintain original resolution, camera angle, and style."
           ],
+          "validation":{"if the image of the person is not in front pose or it is unclear or blur, than do not generate the output"}
           "output": {
             "image": "Realistic final image of the same person wearing the garment, with background unchanged."
           }
@@ -313,6 +314,7 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"Failed to start server: {str(e)}")
         raise
+
 
 
 
