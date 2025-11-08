@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 # Get API key from environment variable (Railway will set this)
 import os
-api_key = os.getenv("GOOGLE_API_KEY", "AIzaSyCPw79xvCt4ZNOXJh4ORZ0OBZ4S7bZka7U")
+api_key = os.getenv("GOOGLE_API_KEY", "AIzaSyD86hMm26c91rmRjbLlBltcrCgCVuM3AlM")
 if not api_key:
     logger.error("GOOGLE_API_KEY environment variable not set!")
     raise ValueError("GOOGLE_API_KEY environment variable is required")
@@ -314,6 +314,7 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"Failed to start server: {str(e)}")
         raise
+
 
 
 
