@@ -25,7 +25,7 @@ if not api_key:
     raise ValueError("GOOGLE_API_KEY environment variable is required")
 
 client = genai.Client(api_key=api_key)
-MODEL_ID = "gemini-2.5-flash-image-preview"
+MODEL_ID = "gemini-2.5-flash-image"
 # Image storage
 IMAGE_DIR = "tryon_results"
 os.makedirs(IMAGE_DIR, exist_ok=True)
@@ -314,6 +314,7 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"Failed to start server: {str(e)}")
         raise
+
 
 
 
